@@ -1,6 +1,6 @@
-module EsaApi
+module EsaBatch
   # Configures global settings for esa-api
-  #   EsaApi.configure do |config|
+  #   EsaBatch.configure do |config|
   #     something...
   #   end
   class << self
@@ -51,9 +51,9 @@ module EsaApi
         def broadcast(message)
           case message
           when /Bad Request: \w+ is not a member of this team/
-            [EsaApi::HTTPClient::NotFoundMember, message]
+            [EsaBatch::HTTPClient::NotFoundMember, message]
           else
-            [EsaApi::HTTPClient::RequestFailed, message]
+            [EsaBatch::HTTPClient::RequestFailed, message]
           end
         end
       end
@@ -104,7 +104,7 @@ module EsaApi
       def all
         return @@teams if @@teams.is_a? Array
 
-        EsaApi.client.teams.body["teams"].each do |data|
+        EsaBatch.client.teams.body["teams"].each do |data|
           Team.create(data)
         end
         @@teams
@@ -130,17 +130,17 @@ module EsaApi
       end
 
       def current_team=(team)
-        if team.is_a? EsaApi::Team
+        if team.is_a? EsaBatch::Team
           team = team.name
         end
         unless exists?(team)
           raise NotFoundTeamError, "Not found #{team} team"
         end
-        EsaApi.client.current_team = team
+        EsaBatch.client.current_team = team
       end
 
       def current_team
-        EsaApi.client.current_team
+        EsaBatch.client.current_team
       end
     end
 
@@ -160,7 +160,7 @@ module EsaApi
 
         begin
           page = next_page
-          response = EsaApi.client.posts({ q: q, page: page, per_page: per_page })
+          response = EsaBatch.client.posts({ q: q, page: page, per_page: per_page })
           response.body["posts"].each do |post|
             posts << new(post)
           end
@@ -186,7 +186,7 @@ module EsaApi
     end
 
     def user
-      EsaApi::User.new(created_by).screen_name
+      EsaBatch::User.new(created_by).screen_name
     end
 
     def push
@@ -195,9 +195,9 @@ module EsaApi
       begin
         try += 1
         HTTPClient.request do
-          EsaApi.client.create_post(request_params)
+          EsaBatch.client.create_post(request_params)
         end
-      rescue EsaApi::HTTPClient::NotFoundMember => e
+      rescue EsaBatch::HTTPClient::NotFoundMember => e
         request_params.merge!({ user: esa_bot })
         retry if try <= 1
       end
